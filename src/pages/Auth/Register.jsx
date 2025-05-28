@@ -1,10 +1,15 @@
 import React, { useState } from "react";
 import AuthLayouts from "../../components/layouts/authLayouts";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react"; // icon 👁️
-
+import { Eye, EyeOff } from "lucide-react";
+import { validateEmail, validatePassword } from "../../utils/helper";
+import ProfilePhotoSelector from "../../components/inputs/ProfilePhotoSelector";
+import axiosInstance from "../../utils/axiosInstance";
+import apiPath from "../../utils/apiPath";
+import uploadImage from "../../utils/uploadImage";
 
 const Register = () => {
+  const [profilePic, setProfilePic] = useState(null);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,13 +20,70 @@ const Register = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+
+    // Validation
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+    if (username.trim() === "") {
+      setError("Username is required");
+      return;
+    }
+    if (!validatePassword(password)) {
+      setError("Password must be at least 8 characters long and contain at least one number");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+
     try {
-      setLoading(true);
-      setError("");
-      await register(username, email, password); 
-      navigate("/");
+      let profileImageUrl = '';
+
+      // Upload image first if exists
+      if (profilePic) {
+        console.log("Uploading profile image...");
+        const imgUploadRes = await uploadImage(profilePic);
+        profileImageUrl = imgUploadRes.imageUrl || "";
+        console.log("Image uploaded successfully:", profileImageUrl);
+      }
+
+      // Register user with image URL
+      console.log("Registering user...");
+      const response = await axiosInstance.post(apiPath.auth.register, {
+        name: username,
+        email,
+        password,
+        profileImageUrl // Send the URL string, not the file
+      });
+
+      const { token, success, message } = response.data;
+
+      if (success && token) {
+        localStorage.setItem("token", token);
+        console.log("Registration successful");
+        navigate("/login");
+      } else {
+        setError(message || "Registration failed");
+      }
+
     } catch (err) {
-      setError(err.message);
+      console.error("Registration error:", err);
+      
+      // More specific error handling
+      if (err.response) {
+        // Server responded with error status
+        const errorMessage = err.response.data?.message || "Registration failed";
+        setError(errorMessage);
+        console.error("Server error:", err.response.data);
+      } else if (err.request) {
+        // Request was made but no response
+        setError("Network error. Please check your connection.");
+      } else {
+        // Something else happened
+        setError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -40,6 +102,8 @@ const Register = () => {
           )}
 
           <form onSubmit={handleRegister} className="space-y-4">
+            <ProfilePhotoSelector image={profilePic} setImage={setProfilePic}/>
+            
             <div>
               <label className="block text-gray-700 text-sm mb-1">Username</label>
               <input
@@ -85,7 +149,7 @@ const Register = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full text-sm bg-gradient-to-r from-sky-900 via-sky-950 to-black text-white py-2 mt-6 rounded-xl hover:opacity-90 transition"
+              className="w-full text-sm bg-gradient-to-r from-sky-900 via-sky-950 to-black text-white py-2 mt-6 rounded-xl hover:opacity-90 transition disabled:opacity-50"
             >
               {loading ? "Registering..." : "Sign Up"}
             </button>
