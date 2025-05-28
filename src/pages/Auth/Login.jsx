@@ -1,22 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import AuthLayouts from "../../components/layouts/authLayouts";
 import { useNavigate, Link } from "react-router-dom";
-// Import icon 👁️
-import { Eye, EyeOff } from "lucide-react"; // atau bisa dari react-icons/fa misalnya
-
+import { Eye, EyeOff } from "lucide-react"; 
+import { validateEmail, validatePassword } from "../../utils/helper";
+import axiosInstance from "../../utils/axiosInstance";
+import apiPath from "../../utils/apiPath";
+import {UserContext} from "../../context/userContext";
 // Dummy login function untuk simulasi
-const login = async (email, password) => {
-  // Ganti dengan logic API kamu
-  if (email === "test@example.com" && password === "password") {
-    return Promise.resolve();
-  } else if (email === "inactive@example.com") {
-    const error = new Error("Akun tidak aktif");
-    throw error;
-  } else {
-    const error = new Error("Email atau password salah");
-    throw error;
-  }
-};
+
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -24,21 +15,52 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const {updateUser} = useContext(UserContext);
   const navigate = useNavigate();
+  
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    try {
-      setLoading(true);
-      setError("");
-      await login(email, password); // panggil API login
-      navigate("/");
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
+  
+    if (!validateEmail(email)) {
+      setError("Please enter a valid email address");
+      return;
     }
+    if (!validatePassword(password)) {
+      setError("Password must be at least 8 characters long and contain at least one number");
+      return;
+    }
+  
+    setError("");
+    setLoading(true);
+    try {
+      const response = await axiosInstance.post(apiPath.auth.login, {
+        email,
+        password,
+      });
+  
+      const { token, success, message } = response.data;
+  
+      if (token) {
+        localStorage.setItem("token", token);
+        updateUser(response.data); // Assuming updateUser is defined in your context
+      } else {
+        setError("Invalid email or password");
+        return;
+      }
+  
+      if (success) {
+        navigate("/dashboard");
+      } else {
+        setError(message || "Login failed");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      setError(err.response?.data?.message || "An error occurred while logging in. Please try again.");
+    }
+    setLoading(false);
   };
+  
 
   return (
     <div>
@@ -95,6 +117,7 @@ const Login = () => {
               type="submit"
               disabled={loading}
               className="w-full text-sm bg-gradient-to-r from-sky-900 via-sky-950 to-black text-white py-2 mt-6 rounded-xl hover:opacity-90 transition"
+
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
