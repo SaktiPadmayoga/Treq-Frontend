@@ -5,7 +5,7 @@ const AuthLayouts = ({children}) => {
     <div className='flex items-center justify-center bg-gray-100'>
         <div className='w-1/2  h-screen py-16 pl-5 flex flex-col justify-center max-w-md mx-auto'>
             <img
-            src="/public/Treq-logo.png" // Pastikan path gambar ini benar sesuai public/src kamu
+            src="/Treq-logo.png" 
             alt="Logo"
             className="h-14 w-14 mb-6 text-start rounded-sm" 
           />
