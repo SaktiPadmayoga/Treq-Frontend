@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { motion } from "framer-motion";
+import { Link } from 'react-router-dom';
 
 const LandingNav = () => {
   return (
@@ -23,12 +24,17 @@ const LandingNav = () => {
           <a href="#pricing" className="hover:text-blue-400">Pricing</a>
         </div>
         <div>
-          <button className=" hover:bg-blue-700 px-4 py-2">
-            Login
-          </button>
-          <button className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-full text-white">
-            Sign Up
-          </button>
+          <Link to="/login">
+            <button className=" hover:bg-blue-700 px-4 py-2">
+              Login
+            </button>
+          </Link>
+          <Link to="/register">
+            <button className="bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded-full text-white">
+              Sign Up
+            </button>
+          </Link>
+          
         </div>
         
       </div>
